@@ -22,6 +22,7 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 /******************************************************************************/
 const unsigned int	GAME_OBJ_NUM_MAX		= 32;	//The total number of different objects (Shapes)
 const unsigned int	GAME_OBJ_INST_NUM_MAX	= 2048;	//The total number of different game object instances
+const unsigned int	PARTICLES_MAX			= 200;
 
 //Gameplay related variables and values
 const float			GRAVITY					= -20.0f;
@@ -31,6 +32,13 @@ const float			MOVE_VELOCITY_ENEMY		= 7.5f;
 const double		ENEMY_IDLE_TIME			= 2.0;
 const int			HERO_LIVES				= 3;
 const float			BOUNDING_RECT_SIZE		= 1.0f;
+
+//Particle related variables and values
+const float			EMISSION_RATE			= 5.f;			// emission rate (particles per second)
+const float			VELOCITY_MAX			= 5.f;			// max velocity
+const float			VELOCITY_MIN			= 2.5f;			// min velocity
+const float			LIFESPAN_MAX			= 1.f;			// max lifespan (seconds)
+const float			LIFESPAN_MIN			= 0.5f;			// min lifespan (seconds)
 
 //Flags
 const unsigned int	FLAG_ACTIVE				= 0x00000001;
@@ -50,7 +58,8 @@ enum TYPE_OBJECT
 	TYPE_OBJECT_COLLISION,		//1
 	TYPE_OBJECT_HERO,			//2
 	TYPE_OBJECT_ENEMY1,			//3
-	TYPE_OBJECT_COIN			//4
+	TYPE_OBJECT_COIN,			//4
+	TYPE_OBJECT_PARTICLE
 };
 
 //State machine states
@@ -80,6 +89,16 @@ struct GameObj
 	AEGfxVertexList *	pMesh;		// pbject
 };
 
+struct Particle {
+	GameObj*		pObject;
+	f32				scale;
+	f32				lifespan;
+	f32				velCurr;
+	AEVec2			posCurr;
+	f32				transparency;
+	unsigned int	flag;
+	AEMtx33			transform;
+};
 
 struct GameObjInst
 {
@@ -118,6 +137,8 @@ static int				HeroLives;
 static int				Hero_Initial_X;
 static int				Hero_Initial_Y;
 static int				TotalCoins;
+static float			ParticleDelay;
+static float			ParticleTimer;
 
 // list of original objects
 static GameObj			*sGameObjList;
@@ -126,6 +147,10 @@ static unsigned int		sGameObjNum;
 // list of object instances
 static GameObjInst		*sGameObjInstList;
 static unsigned int		sGameObjInstNum;
+
+// particle array
+static Particle			*sParticlesList;
+static unsigned int		sParticlesNum;
 
 //Binary map data
 static int				**MapData;
@@ -154,7 +179,7 @@ static GameObjInst		*pHero;
 
 //State machine functions
 void					EnemyStateMachine(GameObjInst *pInst);
-
+f32						PRNG(f32 min, f32 max);
 
 /******************************************************************************/
 /*!
@@ -165,6 +190,7 @@ void GameStatePlatformLoad(void)
 {
 	sGameObjList		= (GameObj *)calloc(GAME_OBJ_NUM_MAX, sizeof(GameObj));
 	sGameObjInstList	= (GameObjInst *)calloc(GAME_OBJ_INST_NUM_MAX, sizeof(GameObjInst));
+	sParticlesList		= (Particle*)calloc(PARTICLES_MAX, sizeof(Particle));
 	sGameObjNum			= 0;
 
 
@@ -264,6 +290,23 @@ void GameStatePlatformLoad(void)
 	pObj->pMesh = AEGfxMeshEnd();
 	AE_ASSERT_MESG(pObj->pMesh, "fail to create object!!");
 
+	//Creating the particle object
+	pObj = sGameObjList + sGameObjNum++;
+	pObj->type = TYPE_OBJECT_PARTICLE;
+
+	AEGfxMeshStart();
+	AEGfxTriAdd(
+		-0.5f,	-0.5f,	0xFF0000FF, 0.0f, 0.0f,
+		0.5f,	-0.5f,	0xFF0000FF, 0.0f, 0.0f,
+		-0.5f,	0.5f,	0xFF0000FF, 0.0f, 0.0f);
+	
+	AEGfxTriAdd(
+		-0.5f,	0.5f,	0xFF0000FF, 0.0f, 0.0f,
+		0.5f,	-0.5f,	0xFF0000FF, 0.0f, 0.0f,
+		0.5f,	0.5f,	0xFF0000FF, 0.0f, 0.0f);
+	pObj->pMesh = AEGfxMeshEnd();
+	AE_ASSERT_MESG(pObj->pMesh, "failed to create particle object.");
+
 	//Setting intital binary map values
 	MapData					= 0;
 	BinaryCollisionArray	= 0;
@@ -311,6 +354,8 @@ void GameStatePlatformInit(void)
 	pWhiteInstance	= 0;
 	TotalCoins		= 0;
 	HeroLives		= HERO_LIVES;
+	ParticleDelay	= EMISSION_RATE / g_dt;
+	ParticleTimer	= 0;
 
 	//Create an object instance representing the black cell.
 	//This object instance should not be visible. When rendering the grid cells, each time we have
@@ -431,6 +476,28 @@ void GameStatePlatformUpdate(void)
 	if (AEInputCheckCurr(AEVK_ESCAPE))
 		gGameStateNext = GS_MAIN;
 	/*HANDLE INPUT END*/
+
+	/*PARTICLE GENERATION*/
+	ParticleTimer -= g_dt;
+	if (ParticleTimer < 0) {
+		CreateParticle(pHero->posCurr);
+		ParticleTimer = ParticleDelay;
+	}
+	/*PARTICLE GENERATION END*/
+
+	/*PARTICLE BEHAVIOUR*/
+	for (unsigned int i = 0; i < PARTICLES_MAX; i++)
+	{
+		Particle* particle = sParticlesList + i;
+
+		if (particle->flag) {
+			particle->lifespan -= g_dt;
+			particle->scale -= g_dt;
+			particle->transparency -= g_dt;
+			particle->posCurr.y += particle->velCurr * g_dt;
+		}
+	}
+	/*PARTICLE BEHAVIOUR END*/
 
 	/*OBJECT PHYSICS*/
 	for(i = 0; i < GAME_OBJ_INST_NUM_MAX; ++i)
@@ -730,6 +797,8 @@ void GameStatePlatformUnload(void)
 	Free the map data
 	*********/
 	FreeMapData();
+	delete[] sGameObjInstList;
+	delete[] sGameObjList;
 }
 
 /******************************************************************************/
@@ -876,29 +945,24 @@ int ImportMapDataFromFile(char *FileName)
 {
 	std::fstream stream{ FileName };
 	if (stream.good()) {
-		/*LOAD FILE INTO ARRAY*/
 		std::string tmpArg;
 		stream >> tmpArg >> BINARY_MAP_WIDTH;
 		stream >> tmpArg >> BINARY_MAP_HEIGHT;
 
-		MapData					= new int* [BINARY_MAP_WIDTH];
-		BinaryCollisionArray	= new int* [BINARY_MAP_WIDTH];
+		MapData = new int* [BINARY_MAP_HEIGHT];
+		BinaryCollisionArray = new int* [BINARY_MAP_HEIGHT];
 
-		for (int x = 0; x < BINARY_MAP_WIDTH; x++)
+		for (int x = 0; x < BINARY_MAP_HEIGHT; x++)
 		{
-			MapData[x]				= new int[BINARY_MAP_HEIGHT];
-			BinaryCollisionArray[x] = new int[BINARY_MAP_HEIGHT];
-		}
-
-		for (int x = 0; x < BINARY_MAP_WIDTH; x++)
-		{
-			for (int y = 0; y < BINARY_MAP_HEIGHT; y++)
+			MapData[x] = new int[BINARY_MAP_WIDTH];
+			BinaryCollisionArray[x] = new int[BINARY_MAP_WIDTH];
+			for (int y = 0; y < BINARY_MAP_WIDTH; y++)
 			{
 				int data;
 				stream >> data;
 
-				MapData[x][y]				= data;
-				BinaryCollisionArray[x][y]	= data == 1 ? 1 : 0;
+				MapData[x][y] = data;
+				BinaryCollisionArray[x][y] = data == 1 ? 1 : 0;
 			}
 		}
 
@@ -927,7 +991,6 @@ int ImportMapDataFromFile(char *FileName)
 
 		delete[] temp;
 		delete[] tmp;
-
 		return 1;
 	}
 
@@ -1093,4 +1156,27 @@ void EnemyStateMachine(GameObjInst *pInst)
 	default:
 		break;
 	}
+}
+
+void CreateParticle(AEVec2 pos) {
+	for (unsigned int i = 0; i < sParticlesNum; i++)
+	{
+		Particle *particle			= sParticlesList + i;
+
+		if (particle->flag == 0) {
+			particle->pObject		= sGameObjList + TYPE_OBJECT_PARTICLE;
+			particle->flag			= 1;
+			particle->transparency	= 1.f;
+			particle->scale			= 1.f;
+			particle->lifespan		= PRNG(LIFESPAN_MIN, LIFESPAN_MAX);
+			particle->velCurr		= PRNG(VELOCITY_MIN, VELOCITY_MAX);
+			particle->posCurr		= pos;
+			break;
+		}
+	}
+}
+
+f32 PRNG(f32 min, f32 max) {
+	int rng = (int)(min * 100) + (std::rand() % ((int)(max * 100) - (int)(min * 100) + 1));
+	return (f32)(rng / 100.f);
 }
