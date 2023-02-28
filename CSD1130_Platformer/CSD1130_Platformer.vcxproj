@@ -162,6 +162,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Source\Collision.cpp" />
     <ClCompile Include="Source\GameStateMgr.cpp" />
     <ClCompile Include="Source\GameState_Platform.cpp" />
@@ -173,6 +174,7 @@
     <ClInclude Include="Include\GameStateMgr.h" />
     <ClInclude Include="Include\GameState_Platform.h" />
     <ClInclude Include="Include\main.h" />
+    <ClInclude Include="ParticleSystem.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
