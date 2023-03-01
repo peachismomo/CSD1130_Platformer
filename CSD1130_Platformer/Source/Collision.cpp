@@ -16,7 +16,7 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 
 /**************************************************************************/
 /*!
-
+	Checks for collision between two rectangles 
 */
 /**************************************************************************/
 bool CollisionIntersection_RectRect(const AABB& aabb1, const AEVec2& vel1,

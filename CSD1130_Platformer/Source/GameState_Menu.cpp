@@ -14,14 +14,29 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 
 #include "main.h"
 
+/******************************************************************************/
+/*!
+	"Load" function of the state
+*/
+/******************************************************************************/
 void GameStateMenuLoad(void) {
-
+	//...nothing
 }
 
+/******************************************************************************/
+/*!
+	"Initialize" function of the state
+*/
+/******************************************************************************/
 void GameStateMenuInit(void) {
-
+	//...nothing
 }
 
+/******************************************************************************/
+/*!
+	"Update" function of the state
+*/
+/******************************************************************************/
 void GameStateMenuUpdate(void) {
 	/*GO TO LEVEL 1*/
 	if (AEInputCheckCurr(AEVK_1))
@@ -36,6 +51,11 @@ void GameStateMenuUpdate(void) {
 		gGameStateNext = GS_QUIT;
 }
 
+/******************************************************************************/
+/*!
+	Rendering
+*/
+/******************************************************************************/
 void GameStateMenuDraw(void) {
 	AEGfxSetBackgroundColor(0.f, 0.f, 0.f);
 	AEGfxSetBlendMode(AE_GFX_BM_BLEND);
@@ -58,10 +78,20 @@ void GameStateMenuDraw(void) {
 	AEGfxPrint(fontId, strBuffer, -.2f, 0.f, 1.f, 1.f, 1.f, 1.f);
 }
 
+/******************************************************************************/
+/*!
+	"Free" function of the state
+*/
+/******************************************************************************/
 void GameStateMenuFree(void) {
 
 }
 
+/******************************************************************************/
+/*!
+	"Unload" function of the state
+*/
+/******************************************************************************/
 void GameStateMenuUnload(void) {
 
 }

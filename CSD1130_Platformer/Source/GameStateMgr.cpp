@@ -33,7 +33,7 @@ void (*GameStateUnload)()	= 0;
 
 /******************************************************************************/
 /*!
-
+	Initialize game state manager
 */
 /******************************************************************************/
 void GameStateMgrInit(unsigned int gameStateInit)
@@ -52,7 +52,7 @@ void GameStateMgrInit(unsigned int gameStateInit)
 
 /******************************************************************************/
 /*!
-
+	Game state manager to set function pointers
 */
 /******************************************************************************/
 void GameStateMgrUpdate()

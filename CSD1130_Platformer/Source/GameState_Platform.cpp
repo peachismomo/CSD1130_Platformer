@@ -192,7 +192,7 @@ void					CreateParticle(AEVec2 pos);
 
 /******************************************************************************/
 /*!
-
+	"Load" function of this state
 */
 /******************************************************************************/
 void GameStatePlatformLoad(void)
@@ -322,7 +322,7 @@ void GameStatePlatformLoad(void)
 	BINARY_MAP_WIDTH		= 0;
 	BINARY_MAP_HEIGHT		= 0;
 
-	//Importing Data
+	// Choose level data
 	if (gGameStateCurr == GS_PLATFORM) {
 		if (!ImportMapDataFromFile("../Resources/Levels/Exported.txt"))
 			gGameStateNext = GS_QUIT;
@@ -343,7 +343,7 @@ void GameStatePlatformLoad(void)
 
 /******************************************************************************/
 /*!
-
+	"Initialize" function of this state
 */
 /******************************************************************************/
 void GameStatePlatformInit(void)
@@ -405,7 +405,7 @@ void GameStatePlatformInit(void)
 
 /******************************************************************************/
 /*!
-
+	"Update" function of this state
 */
 /******************************************************************************/
 void GameStatePlatformUpdate(void)
@@ -439,6 +439,8 @@ void GameStatePlatformUpdate(void)
 		{
 			pHero->velCurr.y = JUMP_VELOCITY;
 		}
+
+		/*Reset prev collision flag to prevent double jumping mid air*/
 		pHero->gridCollisionFlagPrev = 0;
 	}
 
@@ -467,11 +469,13 @@ void GameStatePlatformUpdate(void)
 			particle->scale			-= g_dt / 3.f;
 			particle->transparency	-= g_dt;
 			particle->posCurr.y		+= particle->velCurr * g_dt;
+			particle->posCurr.x		+= pHero->velCurr.x <= 0 ? -1.f * g_dt : 1.f * g_dt;
 		}
 
 		/*Delete particle if the lifespan or scale becomes 0*/
 		if (particle->lifespan < 0 || 
-			particle->scale < 0) particle->flag = 0;
+			particle->scale < 0) 
+			particle->flag = 0;
 
 	}
 	/*PARTICLE BEHAVIOUR END*/
@@ -507,10 +511,11 @@ void GameStatePlatformUpdate(void)
 		// Update position (movememnt)
 		pInst->posCurr.x = pInst->velCurr.x * g_dt + pInst->posCurr.x;
 		pInst->posCurr.y = pInst->velCurr.y * g_dt + pInst->posCurr.y;
+		AEVec2 pos = pHero->posCurr;
+		AEMtx33MultVec(&pos, &MapTransform, &pos);
 
-		// Update bounding box
-		AEVec2Set(&pInst->boundingBox.min, -BOUNDING_RECT_SIZE / 2.f * pInst->scale + pInst->posCurr.x, -BOUNDING_RECT_SIZE / 2.f * pInst->scale + pInst->posCurr.y	);
-		AEVec2Set(&pInst->boundingBox.max, BOUNDING_RECT_SIZE / 2.f * pInst->scale + pInst->posCurr.x,	BOUNDING_RECT_SIZE / 2.f * pInst->scale + pInst->posCurr.y	);
+		AEVec2Set(&pInst->boundingBox.min, -BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowWidth() / 20.f + pos.x, -BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowHeight() / 20.f + pos.y	);
+		AEVec2Set(&pInst->boundingBox.max, BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowWidth() / 20.f + pos.x,	BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowHeight() / 20.f + pos.y	);
 	} // UPDATE POSITION END
 
 	/*GRID COLLISION*/
@@ -637,7 +642,7 @@ void GameStatePlatformUpdate(void)
 
 /******************************************************************************/
 /*!
-
+	Render all active GameObjInst.
 */
 /******************************************************************************/
 void GameStatePlatformDraw(void)
@@ -680,8 +685,8 @@ void GameStatePlatformDraw(void)
 			continue;
 
 		// Apply map transformation to object instance transformation
-		AEMtx33Concat(&cellFinalTransformation, &MapTransform, &pInst->transform);
-		AEGfxSetTransform(cellFinalTransformation.m);
+		AEMtx33Concat		(&cellFinalTransformation, &MapTransform, &pInst->transform);
+		AEGfxSetTransform	(cellFinalTransformation.m);
 
 		AEGfxMeshDraw(pInst->pObject->pMesh, AE_GFX_MDM_TRIANGLES);
 	}
@@ -703,16 +708,16 @@ void GameStatePlatformDraw(void)
 	memset(strBuffer, 0, 32 * sizeof(char));
 
 	/*SHOW TEXT ON SCREEN*/
-	sprintf_s(strBuffer, "Coins Left: %d", TotalCoins);
-	AEGfxPrint(fontId, strBuffer, -.9, .9f, 1.f, 0.f, 0.f, 1.f);
+	sprintf_s	(strBuffer, "Coins Left: %d", TotalCoins);
+	AEGfxPrint	(fontId, strBuffer, -.9f, .9f, 1.f, 0.f, 0.f, 1.f);
 
-	sprintf_s(strBuffer, "Lives: %d", HeroLives);
-	AEGfxPrint(fontId, strBuffer, .7f, .9f, 1.f, 0.f, 0.f, 1.f);
+	sprintf_s	(strBuffer, "Lives: %d", HeroLives);
+	AEGfxPrint	(fontId, strBuffer, .7f, .9f, 1.f, 0.f, 0.f, 1.f);
 }
 
 /******************************************************************************/
 /*!
-
+	Destroys all GameObjInst.
 */
 /******************************************************************************/
 void GameStatePlatformFree(void)
@@ -724,7 +729,7 @@ void GameStatePlatformFree(void)
 
 /******************************************************************************/
 /*!
-
+	Frees all mesh data from the sGameObjList and frees allocated memory
 */
 /******************************************************************************/
 void GameStatePlatformUnload(void)
@@ -737,14 +742,14 @@ void GameStatePlatformUnload(void)
 	Free the map data
 	*********/
 	FreeMapData();
-	delete[] sGameObjInstList;
-	delete[] sGameObjList;
-	delete[] sParticlesList;
+	free(sGameObjInstList);
+	free(sGameObjList);
+	free(sParticlesList);
 }
 
 /******************************************************************************/
 /*!
-
+	Creates object instance
 */
 /******************************************************************************/
 GameObjInst* gameObjInstCreate(unsigned int type, float scale, 
@@ -787,7 +792,7 @@ GameObjInst* gameObjInstCreate(unsigned int type, float scale,
 
 /******************************************************************************/
 /*!
-
+	Destroys object instance
 */
 /******************************************************************************/
 void gameObjInstDestroy(GameObjInst* pInst)
@@ -802,7 +807,7 @@ void gameObjInstDestroy(GameObjInst* pInst)
 
 /******************************************************************************/
 /*!
-
+	Gets cell value from binary collision data
 */
 /******************************************************************************/
 int GetCellValue(int X, int Y)
@@ -817,7 +822,7 @@ int GetCellValue(int X, int Y)
 
 /******************************************************************************/
 /*!
-
+	Checks collision of object based on the binary collision map
 */
 /******************************************************************************/
 int CheckInstanceBinaryMapCollision(float PosX, float PosY, float scaleX, float scaleY)
@@ -869,7 +874,7 @@ int CheckInstanceBinaryMapCollision(float PosX, float PosY, float scaleX, float 
 
 /******************************************************************************/
 /*!
-
+	Snaps to cell
 */
 /******************************************************************************/
 void SnapToCell(float *Coordinate)
@@ -878,8 +883,8 @@ void SnapToCell(float *Coordinate)
 }
 
 /******************************************************************************/
-/*!
-
+/*!	
+	Imports data from file path and filps the data along the x and y axis
 */
 /******************************************************************************/
 int ImportMapDataFromFile(char *FileName)
@@ -920,6 +925,7 @@ int ImportMapDataFromFile(char *FileName)
 				tmp[i][j]	= BinaryCollisionArray[j][i];
 			}
 		}
+
 		// swap rows and columns
 		std::swap(MapData, temp);
 		std::swap(BinaryCollisionArray, tmp);
@@ -940,7 +946,7 @@ int ImportMapDataFromFile(char *FileName)
 
 /******************************************************************************/
 /*!
-
+	Deletes allocated memory for the maps
 */
 /******************************************************************************/
 void FreeMapData(void)
@@ -957,14 +963,14 @@ void FreeMapData(void)
 
 /******************************************************************************/
 /*!
-
+	AI for enemies using a state machine
 */
 /******************************************************************************/
 void EnemyStateMachine(GameObjInst *pInst)
 {
 	/*CONVERT COORDINATES TO CELL COORDINATES BY FLOORING VALUE*/
-	int currCellX = static_cast<int>(pInst->posCurr.x);
-	int currCellY = static_cast<int>(pInst->posCurr.y);
+	int currCellX = (int)(pInst->posCurr.x);
+	int currCellY = (int)(pInst->posCurr.y);
 
 	/*STATE MANAGER*/
 	switch (pInst->state) {
@@ -1072,6 +1078,11 @@ void EnemyStateMachine(GameObjInst *pInst)
 	}
 }
 
+/******************************************************************************/
+/*!
+	Creates a new particle
+*/
+/******************************************************************************/
 void CreateParticle(AEVec2 pos) {
 	for (unsigned int i = 0; i < PARTICLES_MAX; i++)
 	{
@@ -1091,7 +1102,11 @@ void CreateParticle(AEVec2 pos) {
 	}
 }
 
-
+/******************************************************************************/
+/*!
+	RNG calculation between two floating point values
+*/
+/******************************************************************************/
 f32 PRNG(f32 min, f32 max) {
 	int rng = (int)(min * 100) + (std::rand() % ((int)(max * 100) - (int)(min * 100) + 1));
 	return (f32)(rng / 100.f);
