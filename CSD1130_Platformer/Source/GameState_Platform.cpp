@@ -699,11 +699,15 @@ void GameStatePlatformDraw(void)
 	}
 	/*RENDER INSTANCES END*/
 
-	char strBuffer[100];
-	memset(strBuffer, 0, 100*sizeof(char));
-	sprintf_s(strBuffer, "Lives:  %i", HeroLives);
-	//AEGfxPrint(650, 30, (u32)-1, strBuffer);	
-	printf("%s \n", strBuffer);
+	char strBuffer[32];
+	memset(strBuffer, 0, 32 * sizeof(char));
+
+	/*SHOW TEXT ON SCREEN*/
+	sprintf_s(strBuffer, "Coins Left: %d", TotalCoins);
+	AEGfxPrint(fontId, strBuffer, -.9, .9f, 1.f, 0.f, 0.f, 1.f);
+
+	sprintf_s(strBuffer, "Lives: %d", HeroLives);
+	AEGfxPrint(fontId, strBuffer, .7f, .9f, 1.f, 0.f, 0.f, 1.f);
 }
 
 /******************************************************************************/
