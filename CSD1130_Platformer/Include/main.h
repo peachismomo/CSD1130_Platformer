@@ -1,27 +1,20 @@
 /******************************************************************************/
 /*!
 \file		main.h
-\author 	DigiPen
-\par    	email: digipen\@digipen.edu
-\date   	February 01, 20xx
+\author 	Ian Chua
+\par    	email: i.chua@digipen.edu
+\date   	February 28, 2023
 \brief
 
-Copyright (C) 20xx DigiPen Institute of Technology.
+Copyright (C) 2023 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents without the
 prior written consent of DigiPen Institute of Technology is prohibited.
  */
-/******************************************************************************/
+ /******************************************************************************/
 
 
 #ifndef CSD1130_MAIN_H_
 #define CSD1130_MAIN_H_
-
-//------------------------------------
-// Globals
-
-extern float	g_dt;
-extern double	g_appTime;
-
 // ---------------------------------------------------------------------------
 // includes
 
@@ -31,6 +24,14 @@ extern double	g_appTime;
 #include "GameStateMgr.h"
 #include "GameState_Platform.h"
 #include "Collision.h"
+#include "GameState_Menu.h"
+
+//------------------------------------
+// Globals
+
+extern float	g_dt;
+extern double	g_appTime;
+extern s8		fontId;
 
 
 #endif // CSD1130_MAIN_H_

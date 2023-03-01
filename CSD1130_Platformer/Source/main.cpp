@@ -1,12 +1,12 @@
 /******************************************************************************/
 /*!
 \file		main.cpp
-\author 	DigiPen
-\par    	email: digipen\@digipen.edu
-\date   	February 01, 20xx
+\author 	Ian Chua
+\par    	email: i.chua@digipen.edu
+\date   	February 28, 2023
 \brief
 
-Copyright (C) 20xx DigiPen Institute of Technology.
+Copyright (C) 2023 DigiPen Institute of Technology.
 Reproduction or disclosure of this file or its contents without the
 prior written consent of DigiPen Institute of Technology is prohibited.
  */
@@ -17,8 +17,9 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 
 // ---------------------------------------------------------------------------
 // Globals
-float	 g_dt;
-double	 g_appTime;
+float	g_dt;
+double	g_appTime;
+s8		fontId;
 
 
 /******************************************************************************/
@@ -38,8 +39,9 @@ int WINAPI WinMain(HINSTANCE instanceH, HINSTANCE prevInstanceH, LPSTR command_l
 	AESysInit(instanceH, show, 800, 600, 1, 60, false, NULL);
 
 	//Create your font here, and use it for all your levels
+	AE_ASSERT_MESG(fontId = AEGfxCreateFont("../Resources/Fonts/Arial Italic.ttf", 24), "Failed to load font");
 
-	GameStateMgrInit(GS_PLATFORM);
+	GameStateMgrInit(GS_MAIN);
 
 	while (gGameStateCurr != GS_QUIT)
 	{
@@ -93,6 +95,7 @@ int WINAPI WinMain(HINSTANCE instanceH, HINSTANCE prevInstanceH, LPSTR command_l
 	}
 
 	//free you font here
+	AEGfxDestroyFont(fontId);
 
 	// free the system
 	AESysExit();
