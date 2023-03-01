@@ -477,32 +477,33 @@ void GameStatePlatformUpdate(void)
 		gGameStateNext = GS_MAIN;
 	/*HANDLE INPUT END*/
 
-	/*PARTICLE GENERATION*/
-	ParticleTimer -= g_dt;
-	if (ParticleTimer < 0) {
-		CreateParticle(pHero->posCurr);
-		ParticleTimer = ParticleDelay;
-	}
-	/*PARTICLE GENERATION END*/
+	///*PARTICLE GENERATION*/
+	//ParticleTimer -= g_dt;
+	//if (ParticleTimer < 0) {
+	//	CreateParticle(pHero->posCurr);
+	//	ParticleTimer = ParticleDelay;
+	//}
+	///*PARTICLE GENERATION END*/
 
-	/*PARTICLE BEHAVIOUR*/
-	for (unsigned int i = 0; i < PARTICLES_MAX; i++)
-	{
-		Particle* particle = sParticlesList + i;
+	///*PARTICLE BEHAVIOUR*/
+	//for (unsigned int i = 0; i < PARTICLES_MAX; i++)
+	//{
+	//	Particle* particle = sParticlesList + i;
 
-		if (particle->flag) {
-			particle->lifespan -= g_dt;
-			particle->scale -= g_dt;
-			particle->transparency -= g_dt;
-			particle->posCurr.y += particle->velCurr * g_dt;
-		}
-	}
+	//	if (particle->flag) {
+	//		particle->lifespan -= g_dt;
+	//		particle->scale -= g_dt;
+	//		particle->transparency -= g_dt;
+	//		particle->posCurr.y += particle->velCurr * g_dt;
+	//	}
+	//}
 	/*PARTICLE BEHAVIOUR END*/
 
 	/*OBJECT PHYSICS*/
 	for(i = 0; i < GAME_OBJ_INST_NUM_MAX; ++i)
 	{
 		pInst = sGameObjInstList + i;
+		int type = pInst->pObject ? pInst->pObject->type : -1;
 
 		// skip non-active object
 		if (0 == (pInst->flag & FLAG_ACTIVE) || 
@@ -528,6 +529,7 @@ void GameStatePlatformUpdate(void)
 	for(i = 0; i < GAME_OBJ_INST_NUM_MAX; ++i)
 	{
 		pInst = sGameObjInstList + i;
+		int type = pInst->pObject ? pInst->pObject->type : -1;
 
 		// skip non-active object
 		if (0 == (pInst->flag & FLAG_ACTIVE))
@@ -551,6 +553,7 @@ void GameStatePlatformUpdate(void)
 	for(i = 0; i < GAME_OBJ_INST_NUM_MAX; ++i)
 	{
 		pInst = sGameObjInstList + i;
+		int type = pInst->pObject ? pInst->pObject->type : -1;
 
 		// skip non-active object instances
 		if (0 == (pInst->flag & FLAG_ACTIVE))
@@ -623,7 +626,8 @@ void GameStatePlatformUpdate(void)
 	for(i = 0; i < GAME_OBJ_INST_NUM_MAX; ++i)
 	{
 		pInst = sGameObjInstList + i;
-		
+		int type = pInst->pObject ? pInst->pObject->type : -1;
+
 		/*SKIP IF INACTIVE OR NON COLLIDABLE*/
 		if (0 == (pInst->flag & FLAG_ACTIVE) || 
 			pInst->flag & FLAG_NON_COLLIDABLE || 
@@ -663,7 +667,7 @@ void GameStatePlatformUpdate(void)
 	{
 		AEMtx33 scale, rot, trans;
 		pInst = sGameObjInstList + i;
-
+		int type = pInst->pObject ? pInst->pObject->type : -1;
 		// skip non-active object
 		if (0 == (pInst->flag & FLAG_ACTIVE))
 			continue;
@@ -671,6 +675,9 @@ void GameStatePlatformUpdate(void)
 		AEMtx33Scale	(&scale,	pInst->scale,		pInst->scale	);
 		AEMtx33Rot		(&rot,		pInst->dirCurr						);
 		AEMtx33Trans	(&trans,	pInst->posCurr.x,	pInst->posCurr.y);
+
+		AEMtx33Concat	(&pInst->transform, &rot,	&scale				);
+		AEMtx33Concat	(&pInst->transform, &trans,	&pInst->transform	);
 	} // OBJECT INSTANCE TRANSFORMATION MATRIX END
 
 	/*CAMERA*/
@@ -756,8 +763,8 @@ void GameStatePlatformDraw(void)
 			continue;
 		
 		//Don't forget to concatenate the MapTransform matrix with the transformation of each game object instance
-		AEMtx33Trans		(&cellTranslation,			pInst->posCurr.x * width,	pInst->posCurr.y * height	);
-		AEMtx33Concat		(&cellFinalTransformation,	&cellTranslation,			&MapTransform				);
+		//AEMtx33Trans		(&cellTranslation,			pInst->posCurr.x * width,	pInst->posCurr.y * height	);
+		AEMtx33Concat		(&cellFinalTransformation,	&MapTransform,	&pInst->transform);
 		AEGfxSetTransform	(cellFinalTransformation.m);
 
 		AEGfxMeshDraw(pInst->pObject->pMesh, AE_GFX_MDM_TRIANGLES);
