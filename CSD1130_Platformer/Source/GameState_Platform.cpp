@@ -695,8 +695,8 @@ void GameStatePlatformUpdate(void)
 		f32 height	= (f32)AEGetWindowHeight() / BINARY_MAP_HEIGHT;
 
 
-		f32 xClamp = AEClamp((pHero->posCurr.x - BINARY_MAP_WIDTH / 2.f) * (f32)AEGetWindowWidth() / 20.f,		-width * BINARY_MAP_WIDTH / 2.f,	width * BINARY_MAP_WIDTH / 2.f		); // Between max x and min x
-		f32 yClamp = AEClamp((pHero->posCurr.y - BINARY_MAP_HEIGHT / 2.f) * (f32)AEGetWindowHeight() / 20.f,	-height * BINARY_MAP_HEIGHT / 2.f,	height * (BINARY_MAP_HEIGHT / 2.f)	); // Between max x and min x
+		f32 xClamp = AEClamp((pHero->posCurr.x - BINARY_MAP_WIDTH / 2.f) * (f32)AEGetWindowWidth() / 20.f,		-width * (BINARY_MAP_WIDTH / 2.f + 2),		width * (BINARY_MAP_WIDTH / 2.f + 2)	); // Between max x and min x
+		f32 yClamp = AEClamp((pHero->posCurr.y - BINARY_MAP_HEIGHT / 2.f) * (f32)AEGetWindowHeight() / 20.f,	-height * (BINARY_MAP_HEIGHT / 2.f + 3),	height * (BINARY_MAP_HEIGHT / 2.f + 3)	); // Between max x and min x
 
 		AEGfxSetCamPosition(xClamp, yClamp);
 	}
@@ -962,40 +962,40 @@ int ImportMapDataFromFile(char *FileName)
 		stream >> tmpArg >> BINARY_MAP_WIDTH;
 		stream >> tmpArg >> BINARY_MAP_HEIGHT;
 
-		MapData = new int* [BINARY_MAP_HEIGHT];
-		BinaryCollisionArray = new int* [BINARY_MAP_HEIGHT];
+		int** temp	= new int* [BINARY_MAP_HEIGHT];
+		int** tmp	= new int* [BINARY_MAP_HEIGHT];
 
 		for (int x = 0; x < BINARY_MAP_HEIGHT; x++)
 		{
-			MapData[x] = new int[BINARY_MAP_WIDTH];
-			BinaryCollisionArray[x] = new int[BINARY_MAP_WIDTH];
+			temp[x] = new int[BINARY_MAP_WIDTH];
+			tmp[x] = new int[BINARY_MAP_WIDTH];
 			for (int y = 0; y < BINARY_MAP_WIDTH; y++)
 			{
 				int data;
 				stream >> data;
 
-				MapData[x][y] = data;
-				BinaryCollisionArray[x][y] = data == 1 ? 1 : 0;
+				temp[x][y] = data;
+				tmp[x][y] = data == 1 ? 1 : 0;
 			}
 		}
 
 		/*FLIP THE X AND Y AXIS*/
-		int** temp	= new int* [BINARY_MAP_HEIGHT]; // allocate temporary 2D array
-		int** tmp	= new int* [BINARY_MAP_HEIGHT];
+		MapData					= new int* [BINARY_MAP_WIDTH]; // allocate temporary 2D array
+		BinaryCollisionArray	= new int* [BINARY_MAP_WIDTH];
 
-		for (int i = 0; i < BINARY_MAP_HEIGHT; i++) {
-			temp[i] = new int[BINARY_MAP_WIDTH];
-			tmp[i]	= new int[BINARY_MAP_WIDTH];
-
-			for (int j = 0; j < BINARY_MAP_WIDTH; j++) {
-				temp[i][j]	= MapData[j][i]; // copy elements into temp array
-				tmp[i][j]	= BinaryCollisionArray[j][i];
-			}
+		for (int i = 0; i < BINARY_MAP_WIDTH; i++) {
+			MapData[i]				= new int[BINARY_MAP_HEIGHT];
+			BinaryCollisionArray[i]	= new int[BINARY_MAP_HEIGHT];
 		}
 
-		// swap rows and columns
-		std::swap(MapData, temp);
-		std::swap(BinaryCollisionArray, tmp);
+		for (int x = 0; x < BINARY_MAP_HEIGHT; x++)
+		{
+			for (int y = 0; y < BINARY_MAP_WIDTH; y++)
+			{
+				MapData[y][x]				= temp[x][y];
+				BinaryCollisionArray[y][x]	= tmp[x][y];
+			}
+		}
 
 		// deallocate temp array
 		for (int i = 0; i < BINARY_MAP_HEIGHT; i++) {
@@ -1005,6 +1005,7 @@ int ImportMapDataFromFile(char *FileName)
 
 		delete[] temp;
 		delete[] tmp;
+
 		return 1;
 	}
 
@@ -1018,7 +1019,7 @@ int ImportMapDataFromFile(char *FileName)
 /******************************************************************************/
 void FreeMapData(void)
 {
-	for (int i = 0; i < BINARY_MAP_HEIGHT; i++)
+	for (int i = 0; i < BINARY_MAP_WIDTH; i++)
 	{
 		delete[] MapData[i];
 		delete[] BinaryCollisionArray[i];
