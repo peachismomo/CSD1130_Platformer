@@ -14,6 +14,7 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 
 #include "main.h"
 #include <fstream>
+#include <iostream>
 
 /******************************************************************************/
 /*!
@@ -82,6 +83,12 @@ enum INNER_STATE
 	INNER_STATE_ON_EXIT
 };
 
+enum DIRECTION 
+{
+	FACE_LEFT,
+	FACE_RIGHT
+};
+
 /******************************************************************************/
 /*!
 	Struct/Class Definitions
@@ -106,14 +113,15 @@ struct Particle {
 
 struct GameObjInst
 {
-	GameObj *		pObject;	// pointer to the 'original'
-	unsigned int	flag;		// bit flag or-ed together
-	float			scale;		// object scale
-	AEVec2			posCurr;	// object current position
-	AEVec2			velCurr;	// object current velocity
-	float			dirCurr;	// object current direction
-	AEMtx33			transform;	// object drawing matrix
-	AABB			boundingBox;// object bouding box that encapsulates the object
+	GameObj *		pObject;			// pointer to the 'original'
+	unsigned int	flag;				// bit flag or-ed together
+	float			scale;				// object scale
+	AEVec2			posCurr;			// object current position
+	AEVec2			velCurr;			// object current velocity
+	float			dirCurr;			// object current direction
+	AEMtx33			transform;			// object drawing matrix
+	AABB			boundingBox;		// object bouding box that encapsulates the object
+	enum			DIRECTION face;		// direction the object is facing (left/right)
 
 	//Collision Flags
 	int				gridCollisionFlag;
@@ -299,7 +307,25 @@ void GameStatePlatformLoad(void)
 	pObj->pMesh = AEGfxMeshEnd();
 	AE_ASSERT_MESG(pObj->pMesh, "fail to create object!!");
 
-	//Creating the particle object
+	/*CREATE 4 PARTICLES WITH DIFFERENT COLORS*/
+	/*PARTICLE 1*/
+	pObj = sGameObjList + sGameObjNum++;
+	pObj->type = TYPE_OBJECT_PARTICLE;
+
+	AEGfxMeshStart();
+	AEGfxTriAdd(
+		-0.5f,	-0.5f,	0xFF00FFFF, 0.0f, 0.0f,
+		0.5f,	-0.5f,	0xFF00FFFF, 0.0f, 0.0f,
+		-0.5f,	0.5f,	0xFF00FFFF, 0.0f, 0.0f);
+	
+	AEGfxTriAdd(
+		-0.5f,	0.5f,	0xFF00FFFF, 0.0f, 0.0f,
+		0.5f,	-0.5f,	0xFF00FFFF, 0.0f, 0.0f,
+		0.5f,	0.5f,	0xFF00FFFF, 0.0f, 0.0f);
+	pObj->pMesh = AEGfxMeshEnd();
+	AE_ASSERT_MESG(pObj->pMesh, "failed to create particle object.");
+
+	/*PARTICLE 2*/
 	pObj = sGameObjList + sGameObjNum++;
 	pObj->type = TYPE_OBJECT_PARTICLE;
 
@@ -308,13 +334,48 @@ void GameStatePlatformLoad(void)
 		-0.5f,	-0.5f,	0xFFADD8E6, 0.0f, 0.0f,
 		0.5f,	-0.5f,	0xFFADD8E6, 0.0f, 0.0f,
 		-0.5f,	0.5f,	0xFFADD8E6, 0.0f, 0.0f);
-	
+
 	AEGfxTriAdd(
 		-0.5f,	0.5f,	0xFFADD8E6, 0.0f, 0.0f,
 		0.5f,	-0.5f,	0xFFADD8E6, 0.0f, 0.0f,
 		0.5f,	0.5f,	0xFFADD8E6, 0.0f, 0.0f);
 	pObj->pMesh = AEGfxMeshEnd();
 	AE_ASSERT_MESG(pObj->pMesh, "failed to create particle object.");
+
+	/*PARTICLE 3*/
+	pObj = sGameObjList + sGameObjNum++;
+	pObj->type = TYPE_OBJECT_PARTICLE;
+
+	AEGfxMeshStart();
+	AEGfxTriAdd(
+		-0.5f,	-0.5f, 0xFFF0FFFF, 0.0f, 0.0f,
+		0.5f,	-0.5f, 0xFFF0FFFF, 0.0f, 0.0f,
+		-0.5f,	0.5f, 0xFFF0FFFF, 0.0f, 0.0f);
+
+	AEGfxTriAdd(
+		-0.5f,	0.5f,	0xFFF0FFFF, 0.0f, 0.0f,
+		0.5f,	-0.5f,	0xFFF0FFFF, 0.0f, 0.0f,
+		0.5f,	0.5f,	0xFFF0FFFF, 0.0f, 0.0f);
+	pObj->pMesh = AEGfxMeshEnd();
+	AE_ASSERT_MESG(pObj->pMesh, "failed to create particle object.");
+
+	/*PARTICLE 4*/
+	pObj = sGameObjList + sGameObjNum++;
+	pObj->type = TYPE_OBJECT_PARTICLE;
+
+	AEGfxMeshStart();
+	AEGfxTriAdd(
+		-0.5f,	-0.5f,	0xFF89CFF0, 0.0f, 0.0f,
+		0.5f,	-0.5f,	0xFF89CFF0, 0.0f, 0.0f,
+		-0.5f,	0.5f,	0xFF89CFF0, 0.0f, 0.0f);
+
+	AEGfxTriAdd(
+		-0.5f,	0.5f,	0xFF89CFF0, 0.0f, 0.0f,
+		0.5f,	-0.5f,	0xFF89CFF0, 0.0f, 0.0f,
+		0.5f,	0.5f,	0xFF89CFF0, 0.0f, 0.0f);
+	pObj->pMesh = AEGfxMeshEnd();
+	AE_ASSERT_MESG(pObj->pMesh, "failed to create particle object.");
+	/*CREATE PARTICLES END*/
 
 	//Setting intital binary map values
 	MapData					= 0;
@@ -415,11 +476,15 @@ void GameStatePlatformUpdate(void)
 
 	/*HANDLE INPUT*/
 	/*MOVE LEFT AND RIGHT*/
-	if (AEInputCheckCurr(AEVK_RIGHT)) 
-		pHero->velCurr.x = MOVE_VELOCITY_HERO;
+	if (AEInputCheckCurr(AEVK_RIGHT)) {
+		pHero->velCurr.x	= MOVE_VELOCITY_HERO;
+		pHero->face			= FACE_RIGHT;
+	}
 	
-	else if (AEInputCheckCurr(AEVK_LEFT))
-		pHero->velCurr.x = -MOVE_VELOCITY_HERO;
+	else if (AEInputCheckCurr(AEVK_LEFT)) {
+		pHero->velCurr.x	= -MOVE_VELOCITY_HERO;
+		pHero->face			= FACE_LEFT;
+	}
 
 	else 
 		pHero->velCurr.x = 0.f;
@@ -469,7 +534,7 @@ void GameStatePlatformUpdate(void)
 			particle->scale			-= g_dt / 3.f;
 			particle->transparency	-= g_dt;
 			particle->posCurr.y		+= particle->velCurr * g_dt;
-			particle->posCurr.x		+= pHero->velCurr.x <= 0 ? -1.f * g_dt : 1.f * g_dt;
+			particle->posCurr.x		+= pHero->face ? 1.f * g_dt : -1.f * g_dt;
 		}
 
 		/*Delete particle if the lifespan or scale becomes 0*/
@@ -499,7 +564,7 @@ void GameStatePlatformUpdate(void)
 		}
 	} // OBJECT PHYSICS END
 
-	/*UPDATE POSITION*/
+	  /*UPDATE POSITION*/
 	for(i = 0; i < GAME_OBJ_INST_NUM_MAX; ++i)
 	{
 		pInst = sGameObjInstList + i;
@@ -511,11 +576,9 @@ void GameStatePlatformUpdate(void)
 		// Update position (movememnt)
 		pInst->posCurr.x = pInst->velCurr.x * g_dt + pInst->posCurr.x;
 		pInst->posCurr.y = pInst->velCurr.y * g_dt + pInst->posCurr.y;
-		AEVec2 pos = pHero->posCurr;
-		AEMtx33MultVec(&pos, &MapTransform, &pos);
 
-		AEVec2Set(&pInst->boundingBox.min, -BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowWidth() / 20.f + pos.x, -BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowHeight() / 20.f + pos.y	);
-		AEVec2Set(&pInst->boundingBox.max, BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowWidth() / 20.f + pos.x,	BOUNDING_RECT_SIZE / 2.f * (f32)AEGetWindowHeight() / 20.f + pos.y	);
+		AEVec2Set(&pInst->boundingBox.min, -BOUNDING_RECT_SIZE / 2.f + pInst->posCurr.x,	-BOUNDING_RECT_SIZE / 2.f + pInst->posCurr.y);
+		AEVec2Set(&pInst->boundingBox.max, BOUNDING_RECT_SIZE / 2.f + pInst->posCurr.x,		BOUNDING_RECT_SIZE / 2.f + pInst->posCurr.y	);
 	} // UPDATE POSITION END
 
 	/*GRID COLLISION*/
@@ -567,7 +630,7 @@ void GameStatePlatformUpdate(void)
 
 				/*IF HERO STILL HAVE LIVES, RESET POSITION, IF NOT RESTART LEVEL*/
 				!HeroLives ? gGameStateNext = GS_RESTART :
-					AEVec2Set(&pHero->posCurr, (f32)Hero_Initial_X, (f32)Hero_Initial_Y);
+					AEVec2Set(&pHero->posCurr, (f32)Hero_Initial_X + 0.5f, (f32)Hero_Initial_Y + 0.5f);
 			}
 
 		}
@@ -627,16 +690,17 @@ void GameStatePlatformUpdate(void)
 	} // PARTICLE TRANSFORMATION MATRIX END
 
 	/*CAMERA POSITION*/
-	if (BINARY_MAP_WIDTH > 20 || BINARY_MAP_HEIGHT > 20) {
+	if (gGameStateCurr == GS_PLATFORM2) {
 		f32 width	= (f32)AEGetWindowWidth() / BINARY_MAP_WIDTH;
 		f32 height	= (f32)AEGetWindowHeight() / BINARY_MAP_HEIGHT;
+
 
 		f32 xClamp = AEClamp((pHero->posCurr.x - BINARY_MAP_WIDTH / 2.f) * (f32)AEGetWindowWidth() / 20.f,		-width * BINARY_MAP_WIDTH / 2.f,	width * BINARY_MAP_WIDTH / 2.f		); // Between max x and min x
 		f32 yClamp = AEClamp((pHero->posCurr.y - BINARY_MAP_HEIGHT / 2.f) * (f32)AEGetWindowHeight() / 20.f,	-height * BINARY_MAP_HEIGHT / 2.f,	height * (BINARY_MAP_HEIGHT / 2.f)	); // Between max x and min x
 
 		AEGfxSetCamPosition(xClamp, yClamp);
 	}
-
+	else AEGfxSetCamPosition(0.f, 0.f);
 	/*CAMERA POSITION END*/
 }
 
@@ -693,6 +757,7 @@ void GameStatePlatformDraw(void)
 
 	for (i = 0; i < PARTICLES_MAX; i++)
 	{
+		
 		Particle* particle = sParticlesList + i;
 		if (0 == particle->flag) continue;
 
@@ -770,17 +835,19 @@ GameObjInst* gameObjInstCreate(unsigned int type, float scale,
 		if (pInst->flag == 0)
 		{
 			// it is not used => use it to create the new instance
-			pInst->pObject			 = sGameObjList + type;
-			pInst->flag				 = FLAG_ACTIVE | FLAG_VISIBLE;
-			pInst->scale			 = scale;
-			pInst->posCurr			 = pPos ? *pPos : zero;
-			pInst->velCurr			 = pVel ? *pVel : zero;
-			pInst->dirCurr			 = dir;
-			pInst->pUserData		 = 0;
-			pInst->gridCollisionFlag = 0;
-			pInst->state			 = startState;
-			pInst->innerState		 = INNER_STATE_ON_ENTER;
-			pInst->counter			 = 0;
+			pInst->pObject				 = sGameObjList + type;
+			pInst->flag					 = FLAG_ACTIVE | FLAG_VISIBLE;
+			pInst->scale				 = scale;
+			pInst->posCurr				 = pPos ? *pPos : zero;
+			pInst->velCurr				 = pVel ? *pVel : zero;
+			pInst->dirCurr				 = dir;
+			pInst->face					 = FACE_LEFT;
+			pInst->pUserData			 = 0;
+			pInst->gridCollisionFlag	 = 0;
+			pInst->gridCollisionFlagPrev = 0;
+			pInst->state				 = startState;
+			pInst->innerState			 = INNER_STATE_ON_ENTER;
+			pInst->counter				 = 0;
 			
 			// return the newly created instance
 			return pInst;
@@ -1090,13 +1157,13 @@ void CreateParticle(AEVec2 pos) {
 
 		if (particle->flag == 0) {
 			// Create particle with randomized values
-			particle->pObject		= sGameObjList + TYPE_OBJECT_PARTICLE;
+			particle->pObject		= sGameObjList + TYPE_OBJECT_PARTICLE + (int)PRNG(0.f, 3.f); // Random particle 
 			particle->flag			= 1;
 			particle->transparency	= PRNG(TRANSPARENCY_MIN, TRANSPARENCY_MAX);
 			particle->scale			= PRNG(SCALE_MIN, SCALE_MAX);
 			particle->lifespan		= PRNG(LIFESPAN_MIN, LIFESPAN_MAX);
 			particle->velCurr		= PRNG(VELOCITY_MIN, VELOCITY_MAX);
-			particle->posCurr		= AEVec2{ pos.x + PRNG(-0.1f, 0.1f), pos.y + 0.5f };
+			particle->posCurr		= AEVec2{ pos.x + PRNG(-0.1f, 0.1f), pos.y + PRNG(0.2f, 0.4f) };
 			break;
 		}
 	}
