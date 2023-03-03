@@ -894,9 +894,6 @@ int GetCellValue(int X, int Y)
 /******************************************************************************/
 int CheckInstanceBinaryMapCollision(float PosX, float PosY, float scaleX, float scaleY)
 {
-	//At the end of this function, "Flag" will be used to determine which sides
-	//of the object instance are colliding. 2 hot spots will be placed on each side.
-
 	int flag{};
 
 	float x1, y1, x2, y2;
@@ -962,6 +959,7 @@ int ImportMapDataFromFile(char *FileName)
 		stream >> tmpArg >> BINARY_MAP_WIDTH;
 		stream >> tmpArg >> BINARY_MAP_HEIGHT;
 
+		/*ALLOCATE TEMP ARRAYS*/
 		int** temp	= new int* [BINARY_MAP_HEIGHT];
 		int** tmp	= new int* [BINARY_MAP_HEIGHT];
 
@@ -979,8 +977,8 @@ int ImportMapDataFromFile(char *FileName)
 			}
 		}
 
-		/*FLIP THE X AND Y AXIS*/
-		MapData					= new int* [BINARY_MAP_WIDTH]; // allocate temporary 2D array
+		/*ARRAY IN [X][Y]*/
+		MapData					= new int* [BINARY_MAP_WIDTH];
 		BinaryCollisionArray	= new int* [BINARY_MAP_WIDTH];
 
 		for (int i = 0; i < BINARY_MAP_WIDTH; i++) {
@@ -992,12 +990,13 @@ int ImportMapDataFromFile(char *FileName)
 		{
 			for (int y = 0; y < BINARY_MAP_WIDTH; y++)
 			{
+				/*COPY DATA IN CORRECT ORDER*/
 				MapData[y][x]				= temp[x][y];
 				BinaryCollisionArray[y][x]	= tmp[x][y];
 			}
 		}
 
-		// deallocate temp array
+		/*DELETE TEMP ARRAYS*/
 		for (int i = 0; i < BINARY_MAP_HEIGHT; i++) {
 			delete[] temp[i];
 			delete[] tmp[i];
@@ -1006,6 +1005,7 @@ int ImportMapDataFromFile(char *FileName)
 		delete[] temp;
 		delete[] tmp;
 
+		/*FILE LOAD SUCCESSFUL*/
 		return 1;
 	}
 

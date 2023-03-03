@@ -22,16 +22,15 @@ prior written consent of DigiPen Institute of Technology is prohibited.
 bool CollisionIntersection_RectRect(const AABB& aabb1, const AEVec2& vel1,
 	const AABB& aabb2, const AEVec2& vel2)
 {
-	///*STATIC COLLISION*/
-	//if (aabb1.min.x > aabb2.max.x ||
-	//	aabb1.max.x < aabb2.min.x ||
-	//	aabb1.min.y > aabb2.max.y ||
-	//	aabb1.max.y < aabb2.min.y)
-	//	return false;
+	/*STATIC COLLISION*/
+	if (aabb1.min.x > aabb2.max.x ||
+		aabb1.max.x < aabb2.min.x ||
+		aabb1.min.y > aabb2.max.y ||
+		aabb1.max.y < aabb2.min.y)
+		return false;
 
-	//if (!vel1.x && !vel1.y && !vel2.x && !vel2.y) return false;
 
-	///*DYNAMIC COLLISION*/
+	/*DYNAMIC COLLISION*/
 	AEVec2 vb, a = vel1, b = vel2;
 	AEVec2Sub(&vb, &b, &a);
 
@@ -60,6 +59,7 @@ bool CollisionIntersection_RectRect(const AABB& aabb1, const AEVec2& vel1,
 			tLast = min(((aabb1.max.x - aabb2.min.x) / vb.x), tLast);
 	}
 
+	// if no velocity and objects do not intersect, return false
 	if (vb.x == 0) {
 		if (aabb1.max.x < aabb2.min.x || aabb2.max.x < aabb1.min.x) return false;
 	}
@@ -87,6 +87,7 @@ bool CollisionIntersection_RectRect(const AABB& aabb1, const AEVec2& vel1,
 			tLast = min(((aabb1.max.y - aabb2.min.y) / vb.y), tLast);
 	}
 
+	// if no velocity and objects do not intersect, return false
 	if (vb.y == 0) {
 		if (aabb1.max.y < aabb2.min.y || aabb2.max.y < aabb1.min.y) return false;
 	}
